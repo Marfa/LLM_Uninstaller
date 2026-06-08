@@ -1,36 +1,39 @@
 # LLM Uninstaller
 
-[Русская версия](README.ru.md)
+[English version](README.en.md)
 
-A Windows application that automatically discovers locally installed AI models (LLM, Embedding, Diffusion), shows disk space usage, and lets you safely delete selected models.
+Приложение для Windows, которое автоматически обнаруживает локально установленные AI-модели (LLM, Embedding, Diffusion), показывает занимаемое ими место на диске и позволяет безопасно удалить выбранные модели.
 
-> **Built with [Cursor](https://cursor.com)** — this project was developed using the Cursor AI code editor.
+![Скриншот LLM Uninstaller](docs/screenshot.png)
 
-## Features
+> **Создано в [Cursor](https://cursor.com)** — код этого проекта написан с помощью AI-редактора Cursor.
 
-- **Automatic discovery** in standard directories: Ollama, LM Studio, Hugging Face, GPT4All, Jan, ComfyUI, Text Generation WebUI, KoboldCpp, llama.cpp, Open WebUI
-- **Additional disk scan** on C:, D:, E: drives
-- **Classification** by type: LLM / Diffusion / Embedding
-- **Safe deletion** — to Windows Recycle Bin (default) or permanent delete
-- **Protected system paths** — Windows, Program Files, ProgramData require explicit confirmation
-- **Logging** to SQLite (GUI) or JSON/SQLite (CLI)
-- **CSV export**
-- **Localization** — Russian / English
-- **Auto-update** from [GitHub Releases](https://github.com/Marfa/LLM_Uninstaller/releases)
+## Возможности
 
-## Requirements
+- **Автоматический поиск** моделей в стандартных каталогах: Ollama, LM Studio, Hugging Face, GPT4All, Jan, ComfyUI, Text Generation WebUI, KoboldCpp, llama.cpp, Open WebUI
+- **Дополнительное сканирование** дисков C:, D:, E:
+- **Классификация** по типу: LLM / Diffusion / Embedding
+- **Безопасное удаление** — в Корзину Windows (по умолчанию) или безвозвратно
+- **Защита системных каталогов** — Windows, Program Files, ProgramData требуют явного подтверждения
+- **Логирование** в SQLite (GUI) или JSON/SQLite (CLI)
+- **Экспорт отчётов** в CSV
+- **Локализация** русский / английский
+- **Автообновление** из [GitHub Releases](https://github.com/Marfa/LLM_Uninstaller/releases)
+
+## Требования
 
 - Windows 10/11 (64-bit)
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) (for building from source)
+- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) (для сборки из исходников)
 
-## Download
+## Скачать
 
-Portable Windows build (no installation required) is available in [Releases](https://github.com/Marfa/LLM_Uninstaller/releases):
+Portable-версия для Windows (установка не требуется) доступна в [Releases](https://github.com/Marfa/LLM_Uninstaller/releases):
 
-- `LLMUninstaller.exe` — GUI application
-- `llmuninstaller-cli.exe` — command-line scanner
+- `LLMUninstaller.exe` — графическое приложение
+- `llmuninstaller-cli.exe` — консольный сканер
+- `LLMUninstaller-portable-win-x64.zip` — архив с обоими файлами
 
-## Build from source
+## Сборка из исходников
 
 ```powershell
 git clone https://github.com/Marfa/LLM_Uninstaller.git
@@ -38,48 +41,48 @@ cd LLM_Uninstaller
 dotnet build LLMUninstaller.sln -c Release
 ```
 
-### Publish portable executable
+### Публикация portable-версии
 
 ```powershell
 dotnet publish src\LLMUninstaller.Gui\LLMUninstaller.Gui.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true
 ```
 
-Output: `src\LLMUninstaller.Gui\bin\Release\net8.0-windows\win-x64\publish\LLMUninstaller.exe`
+Результат: `src\LLMUninstaller.Gui\bin\Release\net8.0-windows\win-x64\publish\LLMUninstaller.exe`
 
-## CLI usage
+## Использование CLI
 
 ```powershell
-llmuninstaller-cli [options]
+llmuninstaller-cli [опции]
 ```
 
-| Option | Description |
-|--------|-------------|
-| `--export-csv <path>` | Export report to CSV |
-| `--no-disk-scan` | Skip C:/D:/E: drive scan |
-| `--drives C:,D:` | Specify drives to scan |
-| `--json-log` | Log to JSON (default: SQLite) |
-| `--log <path>` | Log file path |
-| `--help` | Show help |
+| Параметр | Описание |
+|----------|----------|
+| `--export-csv <путь>` | Экспорт отчёта в CSV |
+| `--no-disk-scan` | Не сканировать диски C:/D:/E: |
+| `--drives C:,D:` | Указать диски для сканирования |
+| `--json-log` | Логирование в JSON (по умолчанию SQLite) |
+| `--log <путь>` | Путь к файлу лога |
+| `--help` | Справка |
 
-## Model detection rules
+## Правила определения модели
 
-A directory is considered a model if it:
+Каталог считается моделью, если:
 
-- contains a file **> 500 MB** with a supported extension, **or**
-- has total size **> 1 GB**
+- содержит файл **> 500 МБ** с расширением из поддерживаемого списка, **или**
+- суммарный размер каталога **> 1 ГБ**
 
-### Supported extensions
+### Поддерживаемые расширения
 
-| Type | Extensions |
-|------|------------|
+| Тип | Расширения |
+|-----|------------|
 | LLM | `.gguf`, `.bin`, `.safetensors`, `.pth`, `.pt` |
 | Diffusion | `.ckpt`, `.safetensors`, `.onnx` |
 | Embedding | `.gguf`, `.bin`, `.safetensors` |
 
-## Standard search paths
+## Стандартные пути поиска
 
-| Application | Path |
-|-------------|------|
+| Приложение | Путь |
+|------------|------|
 | Ollama | `%USERPROFILE%\.ollama\models` |
 | LM Studio | `%USERPROFILE%\.lmstudio\models` |
 | Hugging Face | `%USERPROFILE%\.cache\huggingface` |
@@ -91,10 +94,12 @@ A directory is considered a model if it:
 | llama.cpp | `*\llama.cpp\models` |
 | Open WebUI | `%USERPROFILE%\open-webui` |
 
-## Project structure
+## Структура проекта
 
 ```
 LLMUninstaller/
+├── .github/workflows/   # автоматическая сборка релизов
+├── docs/                  # скриншоты и документация
 ├── src/
 │   ├── LLMUninstaller.Core/
 │   ├── LLMUninstaller.Cli/
@@ -102,12 +107,14 @@ LLMUninstaller/
 └── LLMUninstaller.sln
 ```
 
-## Support
+## Поддержка
 
-- Source code: [github.com/Marfa/LLM_Uninstaller](https://github.com/Marfa/LLM_Uninstaller)
-- Donate: [donationalerts.com/r/themarfa](https://www.donationalerts.com/r/themarfa)
-- Crypto: [nowpayments.io/donation/themarfa](https://nowpayments.io/donation/themarfa)
+- Исходный код: [github.com/Marfa/LLM_Uninstaller](https://github.com/Marfa/LLM_Uninstaller)
+- Донат: [donationalerts.com/r/themarfa](https://www.donationalerts.com/r/themarfa)
+- Донат криптой: [nowpayments.io/donation/themarfa](https://nowpayments.io/donation/themarfa)
 
-## License
+## Лицензия
 
-MIT
+Проект распространяется по лицензии [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/).
+
+Вы можете свободно использовать, изменять и распространять проект при условии указания авторства, некоммерческого использования и распространения производных работ на тех же условиях.
