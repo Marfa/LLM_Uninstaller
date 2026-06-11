@@ -1,5 +1,6 @@
 using LLMUninstaller.Core.Constants;
 using LLMUninstaller.Core.Models;
+using LLMUninstaller.Core.Scanning;
 using LLMUninstaller.Core.Utilities;
 
 namespace LLMUninstaller.Core.Detection;
@@ -70,6 +71,18 @@ public static class ModelDetector
             return null;
 
         if (isFile && !IsModelFile(path))
+            return null;
+
+        if (isDir && OllamaDetector.IsOllamaModelsPath(path))
+            return null;
+
+        if (isDir && HuggingFaceDetector.IsHuggingFaceHubPath(path))
+            return null;
+
+        if (isDir && HuggingFaceDetector.IsHuggingFaceBlobsPath(path))
+            return null;
+
+        if (isDir && HuggingFaceDetector.IsHuggingFaceModelPath(path))
             return null;
 
         if (isDir && !IsModelDirectory(path))

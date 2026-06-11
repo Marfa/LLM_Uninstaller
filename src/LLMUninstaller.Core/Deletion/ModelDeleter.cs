@@ -1,6 +1,7 @@
 using LLMUninstaller.Core.Constants;
 using LLMUninstaller.Core.Logging;
 using LLMUninstaller.Core.Models;
+using LLMUninstaller.Core.Scanning;
 using LLMUninstaller.Core.Utilities;
 using Microsoft.VisualBasic.FileIO;
 
@@ -17,6 +18,12 @@ public sealed class ModelDeleter
 
     public async Task<DeleteResult> DeleteAsync(ModelInfo model, DeleteOptions options)
     {
+        if (OllamaDetector.IsOllamaManifestPath(model.FullPath))
+            return await OllamaModelDeleter.DeleteAsync(model, options, _logger);
+
+        if (HuggingFaceDetector.IsHuggingFaceModelPath(model.FullPath))
+            return await HuggingFaceModelDeleter.DeleteAsync(model, options, _logger);
+
         var path = model.FullPath;
 
         if (!PathHelper.PathExists(path))

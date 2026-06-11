@@ -23,15 +23,17 @@ A Windows application that automatically discovers locally installed AI models (
 ## Requirements
 
 - Windows 10/11 (64-bit)
+- **Framework-dependent** build requires [.NET 8 Desktop Runtime (x64)](https://aka.ms/dotnet/8.0/windowsdesktopruntime-x64)
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) (for building from source)
 
 ## Download
 
-Portable Windows build (no installation required) is available in [Releases](https://github.com/Marfa/LLM_Uninstaller/releases):
+Two variants are available in [Releases](https://github.com/Marfa/LLM_Uninstaller/releases):
 
-- `LLMUninstaller.exe` — GUI application
-- `llmuninstaller-cli.exe` — command-line scanner
-- `LLMUninstaller-portable-win-x64.zip` — archive with both files
+| Variant | Size | .NET required | Files |
+|---------|------|---------------|-------|
+| **Portable** (self-contained) | ~70 MB | No | `LLMUninstaller.exe`, `llmuninstaller-cli.exe`, `LLMUninstaller-portable-win-x64.zip` |
+| **Framework-dependent** | ~4 MB | [.NET 8 Desktop Runtime](https://aka.ms/dotnet/8.0/windowsdesktopruntime-x64) | `LLMUninstaller-framework.exe`, `llmuninstaller-cli-framework.exe`, `LLMUninstaller-framework-win-x64.zip` |
 
 ## Build from source
 
@@ -41,13 +43,21 @@ cd LLM_Uninstaller
 dotnet build LLMUninstaller.sln -c Release
 ```
 
-### Publish portable executable
+### Publish
+
+**Portable** (no .NET runtime required on the PC):
 
 ```powershell
-dotnet publish src\LLMUninstaller.Gui\LLMUninstaller.Gui.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true
+dotnet publish src\LLMUninstaller.Gui\LLMUninstaller.Gui.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true
+dotnet publish src\LLMUninstaller.Cli\LLMUninstaller.Cli.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true
 ```
 
-Output: `src\LLMUninstaller.Gui\bin\Release\net8.0-windows\win-x64\publish\LLMUninstaller.exe`
+**Framework-dependent** (requires .NET 8 Desktop Runtime):
+
+```powershell
+dotnet publish src\LLMUninstaller.Gui\LLMUninstaller.Gui.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true
+dotnet publish src\LLMUninstaller.Cli\LLMUninstaller.Cli.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true
+```
 
 ## CLI usage
 
@@ -85,7 +95,7 @@ A directory is considered a model if it:
 |-------------|------|
 | Ollama | `%USERPROFILE%\.ollama\models` |
 | LM Studio | `%USERPROFILE%\.lmstudio\models` |
-| Hugging Face | `%USERPROFILE%\.cache\huggingface` |
+| Hugging Face | `%USERPROFILE%\.cache\huggingface\hub` |
 | GPT4All | `%LOCALAPPDATA%\nomic.ai\GPT4All` |
 | Jan | `%APPDATA%\Jan\data\models` |
 | ComfyUI | `*\ComfyUI\models` |

@@ -23,15 +23,17 @@
 ## Требования
 
 - Windows 10/11 (64-bit)
+- Для **framework-dependent** сборки: [.NET 8 Desktop Runtime (x64)](https://aka.ms/dotnet/8.0/windowsdesktopruntime-x64)
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) (для сборки из исходников)
 
 ## Скачать
 
-Portable-версия для Windows (установка не требуется) доступна в [Releases](https://github.com/Marfa/LLM_Uninstaller/releases):
+Два варианта в [Releases](https://github.com/Marfa/LLM_Uninstaller/releases):
 
-- `LLMUninstaller.exe` — графическое приложение
-- `llmuninstaller-cli.exe` — консольный сканер
-- `LLMUninstaller-portable-win-x64.zip` — архив с обоими файлами
+| Вариант | Размер | .NET на ПК | Файлы |
+|---------|--------|------------|-------|
+| **Portable** (self-contained) | ~70 МБ | не нужен | `LLMUninstaller.exe`, `llmuninstaller-cli.exe`, `LLMUninstaller-portable-win-x64.zip` |
+| **Framework-dependent** | ~4 МБ | [.NET 8 Desktop Runtime](https://aka.ms/dotnet/8.0/windowsdesktopruntime-x64) | `LLMUninstaller-framework.exe`, `llmuninstaller-cli-framework.exe`, `LLMUninstaller-framework-win-x64.zip` |
 
 ## Сборка из исходников
 
@@ -41,13 +43,21 @@ cd LLM_Uninstaller
 dotnet build LLMUninstaller.sln -c Release
 ```
 
-### Публикация portable-версии
+### Публикация
+
+**Portable** (не требует .NET на ПК):
 
 ```powershell
-dotnet publish src\LLMUninstaller.Gui\LLMUninstaller.Gui.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true
+dotnet publish src\LLMUninstaller.Gui\LLMUninstaller.Gui.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true
+dotnet publish src\LLMUninstaller.Cli\LLMUninstaller.Cli.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true
 ```
 
-Результат: `src\LLMUninstaller.Gui\bin\Release\net8.0-windows\win-x64\publish\LLMUninstaller.exe`
+**Framework-dependent** (требует .NET 8 Desktop Runtime):
+
+```powershell
+dotnet publish src\LLMUninstaller.Gui\LLMUninstaller.Gui.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true
+dotnet publish src\LLMUninstaller.Cli\LLMUninstaller.Cli.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true
+```
 
 ## Использование CLI
 
@@ -85,7 +95,7 @@ llmuninstaller-cli [опции]
 |------------|------|
 | Ollama | `%USERPROFILE%\.ollama\models` |
 | LM Studio | `%USERPROFILE%\.lmstudio\models` |
-| Hugging Face | `%USERPROFILE%\.cache\huggingface` |
+| Hugging Face | `%USERPROFILE%\.cache\huggingface\hub` |
 | GPT4All | `%LOCALAPPDATA%\nomic.ai\GPT4All` |
 | Jan | `%APPDATA%\Jan\data\models` |
 | ComfyUI | `*\ComfyUI\models` |

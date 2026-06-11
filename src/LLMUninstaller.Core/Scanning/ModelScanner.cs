@@ -2,6 +2,7 @@ using LLMUninstaller.Core.Constants;
 using LLMUninstaller.Core.Detection;
 using LLMUninstaller.Core.Models;
 using LLMUninstaller.Core.Logging;
+using LLMUninstaller.Core.Utilities;
 
 namespace LLMUninstaller.Core.Scanning;
 
@@ -53,12 +54,14 @@ public sealed class ModelScanner
             var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             var ollamaPath = Path.Combine(userProfile, ".ollama", "models");
             if (OllamaDetector.IsOllamaModelsPath(ollamaPath))
-            {
-                foreach (var ollamaModel in OllamaDetector.EnumerateOllamaModels(ollamaPath))
-                    pathsToScan.Add((ollamaModel, "Ollama"));
-            }
+                pathsToScan.Add((ollamaPath, "Ollama"));
 
-            // Docker volumes for Open WebUI
+            // Hugging Face Hub special handling
+            var hfHubPath = Path.Combine(userProfile, ".cache", "huggingface", "hub");
+            if (HuggingFaceDetector.IsHuggingFaceHubPath(hfHubPath))
+                pathsToScan.Add((hfHubPath, "Hugging Face"));
+
+            // Docker volumes for Open WebUI / Ollama
             await ScanDockerVolumesAsync(pathsToScan, options.CancellationToken);
         }
 
@@ -73,10 +76,24 @@ public sealed class ModelScanner
             // Supplement standard paths with disk scan for missed locations
             foreach (var (path, owner) in DiskScanner.ScanDrives(options.AdditionalDrives, options.CancellationToken))
             {
+                foreach (var discovered in OllamaPathDiscovery.DiscoverInDirectory(path, owner ?? "Ollama"))
+                {
+                    if (!pathsToScan.Any(p => p.Path.Equals(discovered.Path, StringComparison.OrdinalIgnoreCase)))
+                        pathsToScan.Add(discovered);
+                }
+
+                foreach (var hfHub in HuggingFaceDetector.DiscoverHubPaths(path))
+                {
+                    if (!pathsToScan.Any(p => p.Path.Equals(hfHub, StringComparison.OrdinalIgnoreCase)))
+                        pathsToScan.Add((hfHub, "Hugging Face"));
+                }
+
                 if (!pathsToScan.Any(p => p.Path.Equals(path, StringComparison.OrdinalIgnoreCase)))
                     pathsToScan.Add((path, owner));
             }
         }
+
+        PathHelper.RemoveAncestorPaths(pathsToScan, p => p.Path);
 
         var scanned = 0;
         foreach (var (path, owner) in pathsToScan)
@@ -124,6 +141,31 @@ public sealed class ModelScanner
 
         if (Directory.Exists(path))
         {
+            if (OllamaDetector.IsOllamaModelsPath(path))
+            {
+                await ScanOllamaModelsPathAsync(path, owner, results, cancellationToken);
+                return;
+            }
+
+            if (HuggingFaceDetector.IsHuggingFaceHubPath(path))
+            {
+                ScanHuggingFaceHubPath(path, owner, results, cancellationToken);
+                return;
+            }
+
+            var normalizedPath = PathHelper.NormalizeDirectoryPath(path);
+            foreach (var hfHub in HuggingFaceDetector.DiscoverHubPaths(path))
+            {
+                if (PathHelper.NormalizeDirectoryPath(hfHub).Equals(normalizedPath, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                if (_foundPaths.Add(hfHub))
+                    ScanHuggingFaceHubPath(hfHub, owner, results, cancellationToken);
+            }
+
+            if (path.Contains("huggingface", StringComparison.OrdinalIgnoreCase))
+                return;
+
             // Check if the directory itself is a model
             var dirModel = ModelDetector.CreateModelInfo(path, owner);
             if (dirModel != null)
@@ -164,6 +206,42 @@ public sealed class ModelScanner
         }
     }
 
+    private Task ScanOllamaModelsPathAsync(
+        string ollamaModelsPath,
+        string? owner,
+        List<ModelInfo> results,
+        CancellationToken cancellationToken)
+    {
+        foreach (var entry in OllamaDetector.EnumerateOllamaModels(ollamaModelsPath))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (!_foundPaths.Add(entry.Path))
+                continue;
+
+            results.Add(OllamaModelInfoFactory.Create(entry, owner));
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private void ScanHuggingFaceHubPath(
+        string hubPath,
+        string? owner,
+        List<ModelInfo> results,
+        CancellationToken cancellationToken)
+    {
+        foreach (var entry in HuggingFaceDetector.EnumerateModels(hubPath))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (!_foundPaths.Add(entry.Path))
+                continue;
+
+            results.Add(HuggingFaceModelInfoFactory.Create(entry, owner));
+        }
+    }
+
     private static Task ScanDockerVolumesAsync(
         List<(string Path, string? Owner)> pathsToScan,
         CancellationToken cancellationToken)
@@ -183,11 +261,23 @@ public sealed class ModelScanner
                     cancellationToken.ThrowIfCancellationRequested();
 
                     var name = Path.GetFileName(volume);
-                    if (name.Contains("open-webui", StringComparison.OrdinalIgnoreCase) ||
-                        name.Contains("ollama", StringComparison.OrdinalIgnoreCase))
+                    var isOllama = name.Contains("ollama", StringComparison.OrdinalIgnoreCase);
+                    var isOpenWebUi = name.Contains("open-webui", StringComparison.OrdinalIgnoreCase);
+
+                    if (!isOllama && !isOpenWebUi)
+                        continue;
+
+                    var owner = isOllama ? "Ollama (Docker)" : "Open WebUI (Docker)";
+                    var discoveredOllama = false;
+
+                    foreach (var discovered in OllamaPathDiscovery.DiscoverInDirectory(volume, owner))
                     {
-                        pathsToScan.Add((volume, "Open WebUI (Docker)"));
+                        pathsToScan.Add(discovered);
+                        discoveredOllama = true;
                     }
+
+                    if (!discoveredOllama && isOpenWebUi)
+                        pathsToScan.Add((volume, owner));
                 }
             }
             catch

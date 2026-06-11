@@ -11,16 +11,13 @@ public static class StandardPaths
         var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
 
-        // Ollama
-        locations.Add(new($"{userProfile}\\.ollama\\models", "Ollama"));
+        // Ollama — handled separately in ModelScanner via OllamaDetector
 
         // LM Studio
         locations.Add(new($"{userProfile}\\.lmstudio\\models", "LM Studio"));
         locations.Add(new($"{userProfile}\\.cache\\lm-studio", "LM Studio"));
 
-        // Hugging Face
-        locations.Add(new($"{userProfile}\\.cache\\huggingface", "Hugging Face"));
-        locations.Add(new($"{userProfile}\\.cache\\huggingface\\hub", "Hugging Face"));
+        // Hugging Face — handled separately in ModelScanner via HuggingFaceDetector
 
         // GPT4All
         locations.Add(new($"{localAppData}\\nomic.ai\\GPT4All", "GPT4All"));

@@ -77,4 +77,26 @@ public static class PathHelper
 
     public static string GetDisplayName(string path) =>
         File.Exists(path) ? Path.GetFileName(path) : new DirectoryInfo(path).Name;
+
+    /// <summary>
+    /// Removes paths that are strict ancestors of other paths in the list,
+    /// keeping the more specific (child) locations only.
+    /// </summary>
+    public static void RemoveAncestorPaths<T>(List<T> paths, Func<T, string> getPath)
+    {
+        var normalized = paths
+            .Select(p => (Item: p, Path: NormalizeDirectoryPath(getPath(p))))
+            .ToList();
+
+        paths.RemoveAll(item =>
+        {
+            var current = NormalizeDirectoryPath(getPath(item));
+            return normalized.Any(other =>
+                !other.Path.Equals(current, StringComparison.OrdinalIgnoreCase) &&
+                other.Path.StartsWith(current + "\\", StringComparison.OrdinalIgnoreCase));
+        });
+    }
+
+    public static string NormalizeDirectoryPath(string path) =>
+        Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 }

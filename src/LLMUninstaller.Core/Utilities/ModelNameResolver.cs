@@ -1,5 +1,6 @@
 using LLMUninstaller.Core.Constants;
 using LLMUninstaller.Core.Detection;
+using LLMUninstaller.Core.Scanning;
 
 namespace LLMUninstaller.Core.Utilities;
 
@@ -13,6 +14,10 @@ public static class ModelNameResolver
         if (!Directory.Exists(path))
             return Path.GetFileName(path);
 
+        var ollamaName = TryResolveOllamaName(path);
+        if (ollamaName != null)
+            return ollamaName;
+
         var hfName = TryResolveHuggingFaceName(path);
         if (hfName != null)
             return hfName;
@@ -21,11 +26,30 @@ public static class ModelNameResolver
         if (largestModel != null)
             return Path.GetFileNameWithoutExtension(largestModel);
 
+        var singleChildName = TryResolveSingleModelChildName(path);
+        if (singleChildName != null)
+            return singleChildName;
+
         var parentName = new DirectoryInfo(path).Name;
         if (!IsGenericFolderName(parentName))
             return parentName;
 
         return parentName;
+    }
+
+    private static string? TryResolveOllamaName(string path)
+    {
+        var normalized = path.Replace('/', '\\');
+
+        var manifestsIdx = normalized.IndexOf(@"\manifests\", StringComparison.OrdinalIgnoreCase);
+        if (manifestsIdx < 0)
+            return null;
+
+        if (!File.Exists(path))
+            return null;
+
+        var manifestsRoot = normalized[..manifestsIdx] + @"\manifests";
+        return OllamaDetector.ResolveNameFromManifestPath(path, manifestsRoot);
     }
 
     private static string? TryResolveHuggingFaceName(string path)
@@ -104,6 +128,26 @@ public static class ModelNameResolver
         }
 
         return bestPath;
+    }
+
+    private static string? TryResolveSingleModelChildName(string directory)
+    {
+        try
+        {
+            var childDirs = Directory.EnumerateDirectories(directory).ToList();
+            if (childDirs.Count != 1)
+                return null;
+
+            var childName = Path.GetFileName(childDirs[0]);
+            if (IsGenericFolderName(childName))
+                return null;
+
+            return childName;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private static bool IsGenericFolderName(string name) =>

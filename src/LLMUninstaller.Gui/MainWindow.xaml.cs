@@ -1,5 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -38,6 +40,7 @@ public partial class MainWindow : Window
         ModelsGrid.ItemsSource = _models;
         _loc.LanguageChanged += ApplyLocalization;
         ApplyLocalization();
+        LoadColumnWidths();
     }
 
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e) =>
@@ -61,6 +64,7 @@ public partial class MainWindow : Window
         ColApp.Header = _loc.Get("ColApp");
         ColModified.Header = _loc.Get("ColModified");
         ColPath.Header = _loc.Get("ColPath");
+        Resources["OpenFolderToolTip"] = _loc.Get("OpenFolder");
 
         RefreshStatusText();
         UpdateSummary();
@@ -116,9 +120,81 @@ public partial class MainWindow : Window
         e.Handled = true;
     }
 
+    private void OpenFolderButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string path })
+            return;
+
+        try
+        {
+            var folder = File.Exists(path) ? Path.GetDirectoryName(path) : path;
+            if (string.IsNullOrEmpty(folder) || !Directory.Exists(folder))
+                return;
+
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = folder,
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                Strings.Format(_loc.Current, "OpenFolderError", ex.Message),
+                _loc.Get("ErrorTitle"),
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+
+        e.Handled = true;
+    }
+
+    private void LoadColumnWidths()
+    {
+        var settings = GridColumnSettings.Load();
+        if (settings != null)
+        {
+            ApplyColumnWidth(ColSelect, settings.Select);
+            ApplyColumnWidth(ColName, settings.Name);
+            ApplyColumnWidth(ColSize, settings.Size);
+            ApplyColumnWidth(ColType, settings.Type);
+            ApplyColumnWidth(ColApp, settings.App);
+            ApplyColumnWidth(ColModified, settings.Modified);
+
+            if (settings.PathColumn is > 20)
+                ColPath.MinWidth = settings.PathColumn.Value;
+        }
+    }
+
+    private void SaveColumnWidths()
+    {
+        GridColumnSettings.Save(new GridColumnSettings
+        {
+            Select = GetColumnWidth(ColSelect),
+            Name = GetColumnWidth(ColName),
+            Size = GetColumnWidth(ColSize),
+            Type = GetColumnWidth(ColType),
+            App = GetColumnWidth(ColApp),
+            Modified = GetColumnWidth(ColModified),
+            PathColumn = Math.Max(ColPath.ActualWidth, ColPath.MinWidth)
+        });
+    }
+
+    private static void ApplyColumnWidth(DataGridColumn column, double? width)
+    {
+        if (width is > 20)
+            column.Width = new DataGridLength(width.Value);
+    }
+
+    private static double GetColumnWidth(DataGridColumn column) =>
+        column.Width.IsAbsolute ? column.Width.Value : column.ActualWidth;
+
     private void ModelsGrid_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (e.OriginalSource is not DependencyObject source)
+            return;
+
+        if (FindParent<Button>(source) != null)
             return;
 
         var checkbox = FindParent<CheckBox>(source);
@@ -369,6 +445,7 @@ public partial class MainWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        SaveColumnWidths();
         _loc.LanguageChanged -= ApplyLocalization;
         base.OnClosed(e);
     }
@@ -403,7 +480,9 @@ public sealed class ModelViewModel : INotifyPropertyChanged
     public string FullPath => Model.FullPath;
     public string FormattedSize => Model.FormattedSize;
     public long SizeBytes => Model.SizeBytes;
+    public ModelType Type => Model.Type;
     public string TypeDisplay => Model.Type.ToString();
+    public DateTime LastModifiedTime => Model.LastModifiedTime;
     public string OwnerApplication => Model.OwnerApplication ?? Strings.Get("Dash", _language);
     public bool IsProtectedPath => Model.IsProtectedPath;
     public string LastModifiedDisplay =>

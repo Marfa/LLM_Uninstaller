@@ -31,6 +31,8 @@ public static class Strings
         ["ColApp"] = ("Приложение", "Application"),
         ["ColModified"] = ("Изменён", "Modified"),
         ["ColPath"] = ("Путь", "Path"),
+        ["OpenFolder"] = ("Открыть папку", "Open folder"),
+        ["OpenFolderError"] = ("Не удалось открыть папку:\n{0}", "Failed to open folder:\n{0}"),
         ["ErrorTitle"] = ("Ошибка", "Error"),
         ["ScanError"] = ("Ошибка сканирования:\n{0}", "Scan error:\n{0}"),
         ["NoSelectionTitle"] = ("Нет выбора", "No selection"),

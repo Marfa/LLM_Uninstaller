@@ -65,9 +65,12 @@
                   SelectionUnit="FullRow"
                   CanUserAddRows="False"
                   CanUserDeleteRows="False"
-                  CanUserSortColumns="False"
+                  CanUserSortColumns="True"
+                  CanUserResizeColumns="True"
+                  RowHeaderWidth="0"
                   GridLinesVisibility="Horizontal"
                   HeadersVisibility="Column"
+                  ScrollViewer.VerticalScrollBarVisibility="Auto"
                   Background="{StaticResource SurfaceBrush}"
                   Foreground="{StaticResource TextBrush}"
                   RowBackground="{StaticResource SurfaceBrush}"
@@ -75,7 +78,7 @@
                   BorderBrush="#3F3F5A" BorderThickness="1"
                   PreviewMouseLeftButtonDown="ModelsGrid_PreviewMouseLeftButtonDown">
             <DataGrid.Columns>
-                <DataGridTemplateColumn x:Name="ColSelect" Width="46">
+                <DataGridTemplateColumn x:Name="ColSelect" Width="46" MinWidth="40" CanUserSort="False">
                     <DataGridTemplateColumn.Header>
                         <CheckBox x:Name="SelectAllCheckBox"
                                   HorizontalAlignment="Center"
@@ -93,12 +96,58 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTextColumn x:Name="ColName" Binding="{Binding Name}" Width="180"/>
-                <DataGridTextColumn x:Name="ColSize" Binding="{Binding FormattedSize}" Width="90"/>
-                <DataGridTextColumn x:Name="ColType" Binding="{Binding TypeDisplay}" Width="90"/>
-                <DataGridTextColumn x:Name="ColApp" Binding="{Binding OwnerApplication}" Width="130"/>
-                <DataGridTextColumn x:Name="ColModified" Binding="{Binding LastModifiedDisplay}" Width="140"/>
-                <DataGridTextColumn x:Name="ColPath" Binding="{Binding FullPath}" Width="*"/>
+                <DataGridTemplateColumn x:Name="ColName" Width="180" MinWidth="80" SortMemberPath="Name">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Name}"
+                                       TextTrimming="CharacterEllipsis"
+                                       ToolTip="{Binding Name}"
+                                       VerticalAlignment="Center"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn x:Name="ColSize" Binding="{Binding FormattedSize}" SortMemberPath="SizeBytes" Width="90" MinWidth="70"/>
+                <DataGridTextColumn x:Name="ColType" Binding="{Binding TypeDisplay}" SortMemberPath="Type" Width="90" MinWidth="70"/>
+                <DataGridTextColumn x:Name="ColApp" Binding="{Binding OwnerApplication}" SortMemberPath="OwnerApplication" Width="130" MinWidth="90">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                            <Setter Property="ToolTip" Value="{Binding OwnerApplication}"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn x:Name="ColModified" Binding="{Binding LastModifiedDisplay}" SortMemberPath="LastModifiedTime" Width="140" MinWidth="100"/>
+                <DataGridTemplateColumn x:Name="ColPath" Width="*" MinWidth="140" SortMemberPath="FullPath">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0"
+                                           Text="{Binding FullPath}"
+                                           TextTrimming="CharacterEllipsis"
+                                           ToolTip="{Binding FullPath}"
+                                           VerticalAlignment="Center"/>
+                                <Button Grid.Column="1"
+                                        Click="OpenFolderButton_Click"
+                                        Tag="{Binding FullPath}"
+                                        Padding="6,2"
+                                        Margin="6,0,0,0"
+                                        VerticalAlignment="Center"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        Cursor="Hand"
+                                        FontFamily="Segoe MDL2 Assets"
+                                        FontSize="14"
+                                        Foreground="{StaticResource AccentBrush}"
+                                        Content="&#xE838;"
+                                        ToolTip="{DynamicResource OpenFolderToolTip}"/>
+                            </Grid>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
             </DataGrid.Columns>
         </DataGrid>
 

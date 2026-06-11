@@ -2,7 +2,7 @@ namespace LLMUninstaller.Core;
 
 public static class AppInfo
 {
-    public const string Version = "1.0.0";
+    public const string Version = "1.0.1";
     public const string GitHubOwner = "Marfa";
     public const string GitHubRepo = "LLM_Uninstaller";
     public const string SourceCodeUrl = "https://github.com/Marfa/LLM_Uninstaller";

@@ -26,12 +26,13 @@ public sealed class UpdateChecker
 
             var asset = release.Assets?
                 .FirstOrDefault(a =>
+                    a.Name.Equals("LLMUninstaller.exe", StringComparison.OrdinalIgnoreCase))
+                ?? release.Assets?.FirstOrDefault(a =>
+                    a.Name.Equals("LLMUninstaller-portable-win-x64.zip", StringComparison.OrdinalIgnoreCase))
+                ?? release.Assets?.FirstOrDefault(a =>
                     a.Name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) &&
-                    a.Name.Contains("LLMUninstaller", StringComparison.OrdinalIgnoreCase))
-                ?? release.Assets?.FirstOrDefault(a =>
-                    a.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
-                ?? release.Assets?.FirstOrDefault(a =>
-                    a.Name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase));
+                    a.Name.Contains("LLMUninstaller", StringComparison.OrdinalIgnoreCase) &&
+                    !a.Name.Contains("framework", StringComparison.OrdinalIgnoreCase));
 
             if (asset?.BrowserDownloadUrl == null)
                 return new UpdateCheckResult
