@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO.Compression;
+using System.Text;
 
 namespace LLMUninstaller.Core.Updates;
 
@@ -58,20 +59,32 @@ public sealed class UpdateInstaller
         var stagedExe = Path.Combine(tempDir, "LLMUninstaller_new.exe");
         File.Copy(newExePath, stagedExe, overwrite: true);
 
-        var batchPath = Path.Combine(tempDir, "apply_update.bat");
-        await File.WriteAllTextAsync(batchPath, $"""
-            @echo off
-            timeout /t 2 /nobreak >nul
-            move /y "{stagedExe}" "{currentExe}"
-            start "" "{currentExe}"
-            del "%~f0"
-            """, cancellationToken);
+        LaunchUpdateScript(stagedExe, currentExe);
+    }
+
+    /// <summary>
+    /// cmd.exe reads .bat files in the system OEM code page, which breaks paths with
+    /// non-ASCII characters. PowerShell -EncodedCommand uses UTF-16LE and handles any path.
+    /// </summary>
+    private static void LaunchUpdateScript(string stagedExe, string currentExe)
+    {
+        var script = $"""
+            Start-Sleep -Seconds 2
+            Move-Item -LiteralPath '{EscapePowerShellSingleQuoted(stagedExe)}' -Destination '{EscapePowerShellSingleQuoted(currentExe)}' -Force
+            Start-Process -LiteralPath '{EscapePowerShellSingleQuoted(currentExe)}'
+            """;
+
+        var encoded = Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
 
         Process.Start(new ProcessStartInfo
         {
-            FileName = batchPath,
-            UseShellExecute = true,
+            FileName = "powershell.exe",
+            Arguments = $"-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -EncodedCommand {encoded}",
+            UseShellExecute = false,
             CreateNoWindow = true
         });
     }
+
+    private static string EscapePowerShellSingleQuoted(string value) =>
+        value.Replace("'", "''");
 }
