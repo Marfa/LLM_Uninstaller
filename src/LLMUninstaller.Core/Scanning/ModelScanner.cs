@@ -69,7 +69,10 @@ public sealed class ModelScanner
         if (!standardFound && options.ScanAdditionalDisks)
         {
             foreach (var (path, owner) in DiskScanner.ScanDrives(options.AdditionalDrives, options.CancellationToken))
-                pathsToScan.Add((path, owner));
+            {
+                if (!ProtectedPaths.IsProtected(path))
+                    pathsToScan.Add((path, owner));
+            }
         }
         else if (options.ScanAdditionalDisks)
         {
@@ -88,7 +91,8 @@ public sealed class ModelScanner
                         pathsToScan.Add((hfHub, "Hugging Face"));
                 }
 
-                if (!pathsToScan.Any(p => p.Path.Equals(path, StringComparison.OrdinalIgnoreCase)))
+                if (!pathsToScan.Any(p => p.Path.Equals(path, StringComparison.OrdinalIgnoreCase)) &&
+                    !ProtectedPaths.IsProtected(path))
                     pathsToScan.Add((path, owner));
             }
         }

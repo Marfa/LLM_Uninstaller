@@ -1,0 +1,54 @@
+name: Security
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  nuget-audit:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Fail on High/Critical NuGet advisories
+        shell: pwsh
+        run: |
+          $json = dotnet list package --vulnerable --include-transitive --format json | ConvertFrom-Json
+          $hits = @()
+          foreach ($project in $json.projects) {
+            foreach ($fw in $project.frameworks) {
+              foreach ($pkg in @($fw.topLevelPackages + $fw.transitivePackages)) {
+                if (-not $pkg.vulnerabilities) { continue }
+                foreach ($v in $pkg.vulnerabilities) {
+                  $sev = "$($v.severity)".ToLowerInvariant()
+                  if ($sev -in @('high', 'critical')) {
+                    $hits += "$($project.path): $($pkg.id)@$($pkg.resolvedVersion) [$sev] $($v.advisoryurl)"
+                  }
+                }
+              }
+            }
+          }
+          if ($hits.Count -gt 0) {
+            Write-Error ("Vulnerable packages:`n" + ($hits -join "`n"))
+            exit 1
+          }
+          Write-Host "No High/Critical NuGet vulnerabilities."
+
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

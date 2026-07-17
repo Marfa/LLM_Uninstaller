@@ -33,9 +33,10 @@ public sealed class ModelDeleter
             return new DeleteResult { Path = path, Success = false, ErrorMessage = msg };
         }
 
-        if (ProtectedPaths.IsProtected(path) && !options.AllowProtectedPaths)
+        if (ProtectedPaths.IsProtectedIncludingReparseTarget(path) && !options.AllowProtectedPaths)
         {
-            var msg = ProtectedPaths.GetProtectionReason(path);
+            var msg = ProtectedPaths.GetProtectionReason(
+                ProtectedPaths.IsProtected(path) ? path : PathHelper.ResolveReparseTarget(path));
             await _logger.LogErrorAsync($"Удаление: {path}", msg);
             return new DeleteResult { Path = path, Success = false, ErrorMessage = msg };
         }

@@ -164,8 +164,19 @@ public static class HuggingFaceDetector
         return referenced;
     }
 
-    public static string BlobHashToPath(string hubBlobsPath, string blobHash) =>
-        Path.Combine(hubBlobsPath, blobHash);
+    /// <summary>
+    /// Maps a HF blob hash to a path under <paramref name="hubBlobsPath"/>.
+    /// Returns null when the hash would escape the blobs root.
+    /// </summary>
+    public static string? BlobHashToPath(string hubBlobsPath, string blobHash)
+    {
+        if (string.IsNullOrWhiteSpace(blobHash))
+            return null;
+
+        return Utilities.PathHelper.TryJoinUnderRoot(hubBlobsPath, blobHash, out var fullPath)
+            ? fullPath
+            : null;
+    }
 
     private static long CalculateModelSize(string modelsDir, string hubBlobsPath)
     {
@@ -236,21 +247,11 @@ public static class HuggingFaceDetector
 
     private static string? ExtractBlobHash(string path, string hubBlobsPath)
     {
-        var normalized = Path.GetFullPath(path).Replace('/', '\\');
-        var blobsNormalized = Path.GetFullPath(hubBlobsPath).Replace('/', '\\');
+        if (!Utilities.PathHelper.IsUnderRoot(hubBlobsPath, path))
+            return null;
 
-        if (normalized.StartsWith(blobsNormalized, StringComparison.OrdinalIgnoreCase))
-            return Path.GetFileName(normalized);
-
-        var blobsIdx = normalized.LastIndexOf(@"\blobs\", StringComparison.OrdinalIgnoreCase);
-        if (blobsIdx >= 0)
-        {
-            var afterBlobs = normalized[(blobsIdx + @"\blobs\".Length)..];
-            var slash = afterBlobs.IndexOf('\\');
-            return slash > 0 ? afterBlobs[..slash] : afterBlobs;
-        }
-
-        return null;
+        var fileName = Path.GetFileName(Path.GetFullPath(path));
+        return string.IsNullOrEmpty(fileName) ? null : fileName;
     }
 
     private static long GetBlobSize(string hubBlobsPath, string hash)
@@ -258,7 +259,7 @@ public static class HuggingFaceDetector
         try
         {
             var path = BlobHashToPath(hubBlobsPath, hash);
-            return File.Exists(path) ? new FileInfo(path).Length : 0;
+            return path != null && File.Exists(path) ? new FileInfo(path).Length : 0;
         }
         catch
         {

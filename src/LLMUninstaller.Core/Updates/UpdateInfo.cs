@@ -6,6 +6,8 @@ public sealed class UpdateInfo
     public required string DownloadUrl { get; init; }
     public string? ReleaseNotes { get; init; }
     public string? AssetName { get; init; }
+    /// <summary>Lowercase hex SHA-256 of the release asset (no sha256: prefix).</summary>
+    public required string Sha256Hex { get; init; }
 }
 
 public sealed class UpdateCheckResult

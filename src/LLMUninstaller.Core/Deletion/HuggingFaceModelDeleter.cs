@@ -30,13 +30,16 @@ public static class HuggingFaceModelDeleter
         var blobsToDelete = modelBlobHashes
             .Where(hash => !stillReferenced.Contains(hash))
             .Select(hash => HuggingFaceDetector.BlobHashToPath(blobsPath, hash))
+            .Where(path => path != null && PathHelper.IsUnderRoot(blobsPath, path!))
+            .Cast<string>()
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Where(File.Exists)
             .ToList();
 
-        if (ProtectedPaths.IsProtected(modelsDir) && !options.AllowProtectedPaths)
+        if (ProtectedPaths.IsProtectedIncludingReparseTarget(modelsDir) && !options.AllowProtectedPaths)
         {
-            var msg = ProtectedPaths.GetProtectionReason(modelsDir);
+            var msg = ProtectedPaths.GetProtectionReason(
+                ProtectedPaths.IsProtected(modelsDir) ? modelsDir : PathHelper.ResolveReparseTarget(modelsDir));
             await logger.LogErrorAsync($"Удаление: {modelsDir}", msg);
             return new DeleteResult { Path = modelsDir, Success = false, ErrorMessage = msg };
         }
@@ -49,9 +52,10 @@ public static class HuggingFaceModelDeleter
             if (!PathHelper.PathExists(path))
                 continue;
 
-            if (ProtectedPaths.IsProtected(path) && !options.AllowProtectedPaths)
+            if (ProtectedPaths.IsProtectedIncludingReparseTarget(path) && !options.AllowProtectedPaths)
             {
-                var msg = ProtectedPaths.GetProtectionReason(path);
+                var msg = ProtectedPaths.GetProtectionReason(
+                    ProtectedPaths.IsProtected(path) ? path : PathHelper.ResolveReparseTarget(path));
                 await logger.LogErrorAsync($"Удаление: {modelsDir}", msg);
                 return new DeleteResult { Path = modelsDir, Success = false, ErrorMessage = msg };
             }

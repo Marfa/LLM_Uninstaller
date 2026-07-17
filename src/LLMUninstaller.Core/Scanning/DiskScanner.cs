@@ -1,4 +1,5 @@
 using LLMUninstaller.Core.Constants;
+using LLMUninstaller.Core.Utilities;
 
 namespace LLMUninstaller.Core.Scanning;
 
@@ -16,7 +17,7 @@ public static class DiskScanner
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (!Directory.Exists(drive))
+            if (!Directory.Exists(drive) || ProtectedPaths.IsProtected(drive))
                 continue;
 
             foreach (var dirName in StandardPaths.AdditionalSearchDirectoryNames)
@@ -39,6 +40,9 @@ public static class DiskScanner
 
                 foreach (var match in matches)
                 {
+                    if (ProtectedPaths.IsProtected(match))
+                        continue;
+
                     if (VisitedPaths.Add(match))
                         yield return (match, null);
                 }
@@ -53,7 +57,7 @@ public static class DiskScanner
         CancellationToken cancellationToken,
         int currentDepth = 0)
     {
-        if (currentDepth > maxDepth)
+        if (currentDepth > maxDepth || ProtectedPaths.IsProtected(root))
             yield break;
 
         cancellationToken.ThrowIfCancellationRequested();
@@ -71,6 +75,9 @@ public static class DiskScanner
         foreach (var subdir in subdirs)
         {
             cancellationToken.ThrowIfCancellationRequested();
+
+            if (ProtectedPaths.IsProtected(subdir))
+                continue;
 
             var name = Path.GetFileName(subdir);
             if (name.Equals(dirName, StringComparison.OrdinalIgnoreCase))

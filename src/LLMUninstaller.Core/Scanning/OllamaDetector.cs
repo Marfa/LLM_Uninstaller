@@ -105,8 +105,20 @@ public static class OllamaDetector
         return referenced;
     }
 
-    public static string DigestToBlobPath(string blobsPath, string digest) =>
-        Path.Combine(blobsPath, digest.Replace(":", "-", StringComparison.Ordinal));
+    /// <summary>
+    /// Maps an Ollama digest (e.g. sha256:abcd…) to a blob file under <paramref name="blobsPath"/>.
+    /// Returns null when the digest would escape the blobs root.
+    /// </summary>
+    public static string? DigestToBlobPath(string blobsPath, string digest)
+    {
+        if (string.IsNullOrWhiteSpace(digest))
+            return null;
+
+        var fileName = digest.Replace(":", "-", StringComparison.Ordinal);
+        return Utilities.PathHelper.TryJoinUnderRoot(blobsPath, fileName, out var fullPath)
+            ? fullPath
+            : null;
+    }
 
     public static string ResolveNameFromManifestPath(string manifestPath, string manifestsRoot)
     {
@@ -203,6 +215,8 @@ public static class OllamaDetector
             return 0;
 
         var blobPath = DigestToBlobPath(blobsPath, digest);
+        if (blobPath == null)
+            return 0;
 
         try
         {

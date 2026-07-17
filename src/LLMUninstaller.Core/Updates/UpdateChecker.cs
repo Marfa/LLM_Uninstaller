@@ -41,6 +41,20 @@ public sealed class UpdateChecker
                     ErrorMessage = "Release found but no downloadable asset"
                 };
 
+            if (!UpdateDownloadPolicy.IsAllowedDownloadUrl(asset.BrowserDownloadUrl))
+                return new UpdateCheckResult
+                {
+                    UpdateAvailable = false,
+                    ErrorMessage = "Release asset URL is not from an allowed host"
+                };
+
+            if (!UpdateDownloadPolicy.TryParseSha256Digest(asset.Digest, out var sha256Hex))
+                return new UpdateCheckResult
+                {
+                    UpdateAvailable = false,
+                    ErrorMessage = "Release asset has no usable SHA-256 digest"
+                };
+
             return new UpdateCheckResult
             {
                 UpdateAvailable = true,
@@ -49,7 +63,8 @@ public sealed class UpdateChecker
                     Version = latestVersion,
                     DownloadUrl = asset.BrowserDownloadUrl,
                     AssetName = asset.Name,
-                    ReleaseNotes = release.Body
+                    ReleaseNotes = release.Body,
+                    Sha256Hex = sha256Hex
                 }
             };
         }
@@ -98,5 +113,8 @@ public sealed class UpdateChecker
 
         [JsonPropertyName("browser_download_url")]
         public string? BrowserDownloadUrl { get; set; }
+
+        [JsonPropertyName("digest")]
+        public string? Digest { get; set; }
     }
 }

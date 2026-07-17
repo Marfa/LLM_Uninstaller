@@ -31,6 +31,8 @@ public static class OllamaModelDeleter
         var blobsToDelete = modelDigests
             .Where(digest => !stillReferenced.Contains(digest))
             .Select(digest => OllamaDetector.DigestToBlobPath(blobsPath, digest))
+            .Where(path => path != null && PathHelper.IsUnderRoot(blobsPath, path!))
+            .Cast<string>()
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Where(File.Exists)
             .ToList();
@@ -38,9 +40,10 @@ public static class OllamaModelDeleter
         var pathsToDelete = new List<string> { manifestPath };
         pathsToDelete.AddRange(blobsToDelete);
 
-        if (ProtectedPaths.IsProtected(manifestPath) && !options.AllowProtectedPaths)
+        if (ProtectedPaths.IsProtectedIncludingReparseTarget(manifestPath) && !options.AllowProtectedPaths)
         {
-            var msg = ProtectedPaths.GetProtectionReason(manifestPath);
+            var msg = ProtectedPaths.GetProtectionReason(
+                ProtectedPaths.IsProtected(manifestPath) ? manifestPath : PathHelper.ResolveReparseTarget(manifestPath));
             await logger.LogErrorAsync($"Удаление: {manifestPath}", msg);
             return new DeleteResult { Path = manifestPath, Success = false, ErrorMessage = msg };
         }
@@ -50,9 +53,10 @@ public static class OllamaModelDeleter
             if (!PathHelper.PathExists(path))
                 continue;
 
-            if (ProtectedPaths.IsProtected(path) && !options.AllowProtectedPaths)
+            if (ProtectedPaths.IsProtectedIncludingReparseTarget(path) && !options.AllowProtectedPaths)
             {
-                var msg = ProtectedPaths.GetProtectionReason(path);
+                var msg = ProtectedPaths.GetProtectionReason(
+                    ProtectedPaths.IsProtected(path) ? path : PathHelper.ResolveReparseTarget(path));
                 await logger.LogErrorAsync($"Удаление: {manifestPath}", msg);
                 return new DeleteResult { Path = manifestPath, Success = false, ErrorMessage = msg };
             }

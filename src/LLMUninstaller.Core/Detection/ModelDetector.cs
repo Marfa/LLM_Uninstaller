@@ -8,14 +8,12 @@ namespace LLMUninstaller.Core.Detection;
 public static class ModelDetector
 {
     public const long LargeFileThresholdBytes = 500L * 1024 * 1024; // 500 MB
-    public const long LargeDirectoryThresholdBytes = 1024L * 1024 * 1024; // 1 GB
 
     public static bool IsModelDirectory(string directoryPath)
     {
         if (!Directory.Exists(directoryPath))
             return false;
 
-        long totalSize = 0;
         var hasLargeModelFile = false;
 
         try
@@ -25,8 +23,6 @@ public static class ModelDetector
                 try
                 {
                     var info = new FileInfo(file);
-                    totalSize += info.Length;
-
                     var ext = info.Extension;
                     if (ModelExtensions.IsModelExtension(ext) && info.Length > LargeFileThresholdBytes)
                         hasLargeModelFile = true;
@@ -42,7 +38,7 @@ public static class ModelDetector
             return false;
         }
 
-        return hasLargeModelFile || totalSize > LargeDirectoryThresholdBytes;
+        return hasLargeModelFile;
     }
 
     public static bool IsModelFile(string filePath)
@@ -101,7 +97,7 @@ public static class ModelDetector
             OwnerApplication = ownerApplication,
             LastAccessTime = lastAccess,
             LastModifiedTime = lastModified,
-            IsProtectedPath = ProtectedPaths.IsProtected(path),
+            IsProtectedPath = ProtectedPaths.IsProtectedIncludingReparseTarget(path),
             IsDirectory = isDir
         };
     }
