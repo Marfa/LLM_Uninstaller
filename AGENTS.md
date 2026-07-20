@@ -23,6 +23,11 @@ This is a .NET project — use NuGet tooling, not npm.
 - Never commit `.env`, tokens, API keys, or private certificates.
 - Run `gitleaks detect --source .` before release; pre-commit uses `gitleaks protect --staged` (see `scripts/install-gitleaks-hook.sh`).
 
+## Build artifacts
+
+- `bin/`, `obj/`, `publish/`, `release/`, and root `LLMUninstaller-*-win-*.zip` are local build output (see `.gitignore`).
+- Post-commit removes artifacts older than 7 days via `scripts/clean-build-artifacts.sh` (install: `scripts/install-artifact-cleanup-hook.sh`).
+
 ## Security CI
 
 GitHub Actions workflow `.github/workflows/security.yml` runs on every push and PR:

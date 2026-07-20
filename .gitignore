@@ -21,3 +21,4 @@ reports/
 
 # Local release builds
 release/
+LLMUninstaller-*-win-*.zip
