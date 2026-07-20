@@ -16,7 +16,12 @@ fi
 
 file_mtime() {
   local file="$1"
-  stat -f %m "$file" 2>/dev/null || stat -c %Y "$file"
+  # GNU stat (Linux/Git Bash) first; BSD stat (macOS) as fallback.
+  if stat -c %Y "$file" >/dev/null 2>&1; then
+    stat -c %Y "$file"
+  else
+    stat -f %m "$file"
+  fi
 }
 
 is_older_than_cutoff() {
