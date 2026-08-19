@@ -58,13 +58,29 @@ public static class Strings
         ["AboutClose"] = ("Закрыть", "Close"),
         ["UpdateAvailableTitle"] = ("Доступно обновление", "Update available"),
         ["UpdateAvailableMessage"] = (
-            "Доступна новая версия {0} (текущая {1}).\n\nУстановить обновление?",
-            "New version {0} is available (current {1}).\n\nInstall update?"),
+            "Доступна новая версия {0} (текущая {1}).\n\nОткрыть последний релиз на GitHub?",
+            "New version {0} is available (current {1}).\n\nOpen the latest release on GitHub?"),
         ["UpdateDownloading"] = ("Загрузка обновления… {0:F0}%", "Downloading update… {0:F0}%"),
         ["UpdateReady"] = ("Обновление загружено. Приложение будет перезапущено.",
             "Update downloaded. The app will restart."),
         ["UpdateErrorTitle"] = ("Ошибка обновления", "Update error"),
         ["UpdateError"] = ("Не удалось обновить приложение:\n{0}", "Failed to update the application:\n{0}"),
+        ["CursorCacheCleanup"] = ("Очистить кэш Cursor", "Clear Cursor cache"),
+        ["CursorCacheCleanupConfirm"] = (
+            "Дополнительно будет очищен безопасный кэш Cursor (без удаления state.vscdb).",
+            "Additionally safe Cursor cache will be cleared (without deleting state.vscdb)."),
+        ["CursorCacheCleared"] = ("Кэш Cursor очищен. Освобождено: {0}.", "Cursor cache cleared. Freed: {0}."),
+        ["CursorCacheErrors"] = (
+            "Ошибки при очистке кэша Cursor: {0}. Подробности в логе.",
+            "Errors while clearing Cursor cache: {0}. See log for details."),
+        ["ClaudeCacheCleanup"] = ("Очистить кэш Claude", "Clear Claude cache"),
+        ["ClaudeCacheCleanupConfirm"] = (
+            "Дополнительно будет очищен безопасный кэш Claude (только типовые папки кэша).",
+            "Additionally safe Claude cache will be cleared (only typical cache folders)."),
+        ["ClaudeCacheCleared"] = ("Кэш Claude очищен. Освобождено: {0}.", "Claude cache cleared. Freed: {0}."),
+        ["ClaudeCacheErrors"] = (
+            "Ошибки при очистке кэша Claude: {0}. Подробности в логе.",
+            "Errors while clearing Claude cache: {0}. See log for details."),
         ["Dash"] = ("—", "—"),
     };
 

@@ -26,7 +26,7 @@ public partial class MainWindow : Window
     private readonly ModelScanner _scanner;
     private readonly ModelDeleter _deleter;
     private readonly UpdateChecker _updateChecker = new();
-    private readonly UpdateInstaller _updateInstaller = new();
+    private readonly CursorCacheCleaner _cursorCacheCleaner;
     private readonly ObservableCollection<ModelViewModel> _models = [];
     private CancellationTokenSource? _scanCts;
     private string? _statusKey;
@@ -37,6 +37,7 @@ public partial class MainWindow : Window
         InitializeComponent();
         _scanner = new ModelScanner(_logger);
         _deleter = new ModelDeleter(_logger);
+        _cursorCacheCleaner = new CursorCacheCleaner(_logger);
         ModelsGrid.ItemsSource = _models;
         _loc.LanguageChanged += ApplyLocalization;
         ApplyLocalization();
@@ -54,6 +55,8 @@ public partial class MainWindow : Window
         ScanButton.Content = _loc.Get("Scan");
         ExportCsvButton.Content = _loc.Get("ExportCsv");
         PermanentDeleteCheckBox.Content = _loc.Get("DeletePermanently");
+        CursorCacheCleanupCheckBox.Content = _loc.Get("CursorCacheCleanup");
+        ClaudeCacheCleanupCheckBox.Content = _loc.Get("ClaudeCacheCleanup");
         DeleteButton.Content = _loc.Get("DeleteSelected");
         AboutButton.Content = _loc.Get("About");
         LanguageButton.Content = _loc.Get("LanguageToggle");
@@ -242,6 +245,24 @@ public partial class MainWindow : Window
     private void UpdateDeleteButtonState() =>
         DeleteButton.IsEnabled = _models.Any(m => m.IsSelected);
 
+    private static ModelInfo CreateCacheModelInfo(CacheItem item)
+    {
+        var (lastAccess, lastModified) = PathHelper.GetTimestamps(item.FullPath);
+
+        return new ModelInfo
+        {
+            Name = item.Name,
+            FullPath = item.FullPath,
+            SizeBytes = PathHelper.GetSize(item.FullPath),
+            Type = ModelType.Unknown,
+            OwnerApplication = item.OwnerApplication,
+            LastAccessTime = lastAccess,
+            LastModifiedTime = lastModified,
+            IsProtectedPath = false,
+            IsDirectory = item.IsDirectory
+        };
+    }
+
     private async void ScanButton_Click(object sender, RoutedEventArgs e)
     {
         _scanCts?.Cancel();
@@ -269,7 +290,19 @@ public partial class MainWindow : Window
                 CancellationToken = _scanCts.Token
             });
 
-            foreach (var model in results)
+            var allResults = results.ToList();
+
+            // When requested, show app cache entries as additional “deletable models”
+            // so they appear in the UI results list.
+            if (CursorCacheCleanupCheckBox.IsChecked == true)
+                allResults.AddRange(_cursorCacheCleaner.GetCursorCacheItems()
+                    .Select(CreateCacheModelInfo));
+
+            if (ClaudeCacheCleanupCheckBox.IsChecked == true)
+                allResults.AddRange(_cursorCacheCleaner.GetClaudeCacheItems()
+                    .Select(CreateCacheModelInfo));
+
+            foreach (var model in allResults)
                 _models.Add(new ModelViewModel(model, _loc.Current));
 
             UpdateSummary();
@@ -331,6 +364,10 @@ public partial class MainWindow : Window
         var confirmMessage = permanentDelete
             ? Strings.Format(_loc.Current, "ConfirmDeletePermanent", selected.Count, SizeFormatter.Format(totalSize))
             : Strings.Format(_loc.Current, "ConfirmDeleteRecycle", selected.Count, SizeFormatter.Format(totalSize));
+        if (CursorCacheCleanupCheckBox.IsChecked == true)
+            confirmMessage += "\n\n" + _loc.Get("CursorCacheCleanupConfirm");
+        if (ClaudeCacheCleanupCheckBox.IsChecked == true)
+            confirmMessage += "\n\n" + _loc.Get("ClaudeCacheCleanupConfirm");
 
         if (MessageBox.Show(confirmMessage, _loc.Get("ConfirmDeleteTitle"),
                 MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
@@ -359,21 +396,56 @@ public partial class MainWindow : Window
             }
         }
 
+        long cursorFreed = 0;
+        int cursorErrors = 0;
+        long claudeFreed = 0;
+        int claudeErrors = 0;
+        if (CursorCacheCleanupCheckBox.IsChecked == true)
+        {
+            var cursorResult = await _cursorCacheCleaner.ClearGlobalStorageAsync();
+            cursorFreed = cursorResult.FreedBytes;
+            cursorErrors = cursorResult.Errors;
+        }
+        if (ClaudeCacheCleanupCheckBox.IsChecked == true)
+        {
+            var claudeResult = await _cursorCacheCleaner.ClearClaudeCacheAsync();
+            claudeFreed = claudeResult.FreedBytes;
+            claudeErrors = claudeResult.Errors;
+        }
+
         UpdateSummary();
         UpdateDeleteButtonState();
         UpdateSelectAllCheckBox();
 
+        var deletedCount = selected.Count - errors;
+        var totalFreed = freed + cursorFreed + claudeFreed;
         var message = Strings.Format(_loc.Current, "StatusDeleteResult",
-            selected.Count - errors, SizeFormatter.Format(freed));
+            deletedCount, SizeFormatter.Format(totalFreed));
         if (errors > 0)
             message += "\n" + Strings.Format(_loc.Current, "StatusDeleteErrors", errors);
+        if (cursorFreed > 0)
+            message += "\n" + Strings.Format(_loc.Current, "CursorCacheCleared", SizeFormatter.Format(cursorFreed));
+        if (claudeFreed > 0)
+            message += "\n" + Strings.Format(_loc.Current, "ClaudeCacheCleared", SizeFormatter.Format(claudeFreed));
+        if (cursorErrors > 0)
+            message += "\n" + Strings.Format(_loc.Current, "CursorCacheErrors", cursorErrors);
+        if (claudeErrors > 0)
+            message += "\n" + Strings.Format(_loc.Current, "ClaudeCacheErrors", claudeErrors);
 
-        SetStatus("StatusDeleteResult", selected.Count - errors, SizeFormatter.Format(freed));
+        SetStatus("StatusDeleteResult", deletedCount, SizeFormatter.Format(totalFreed));
         if (errors > 0)
             StatusText.Text += "\n" + Strings.Format(_loc.Current, "StatusDeleteErrors", errors);
+        if (cursorFreed > 0)
+            StatusText.Text += "\n" + Strings.Format(_loc.Current, "CursorCacheCleared", SizeFormatter.Format(cursorFreed));
+        if (claudeFreed > 0)
+            StatusText.Text += "\n" + Strings.Format(_loc.Current, "ClaudeCacheCleared", SizeFormatter.Format(claudeFreed));
+        if (cursorErrors > 0)
+            StatusText.Text += "\n" + Strings.Format(_loc.Current, "CursorCacheErrors", cursorErrors);
+        if (claudeErrors > 0)
+            StatusText.Text += "\n" + Strings.Format(_loc.Current, "ClaudeCacheErrors", claudeErrors);
 
         MessageBox.Show(message, _loc.Get("DeleteResultTitle"), MessageBoxButton.OK,
-            errors > 0 ? MessageBoxImage.Warning : MessageBoxImage.Information);
+            errors + cursorErrors + claudeErrors > 0 ? MessageBoxImage.Warning : MessageBoxImage.Information);
     }
 
     private async void ExportCsvButton_Click(object sender, RoutedEventArgs e)
@@ -415,19 +487,13 @@ public partial class MainWindow : Window
             if (answer != MessageBoxResult.Yes)
                 return;
 
-            ScanProgress.Visibility = Visibility.Visible;
-            ScanProgress.IsIndeterminate = false;
-            ScanProgress.Value = 0;
-
-            var progress = new Progress<double>(p =>
+            // Kaspersky может ругаться на процесс автозагрузки/установки.
+            // Вместо скачивания бинарника просто открываем страницу последнего релиза.
+            Process.Start(new ProcessStartInfo
             {
-                ScanProgress.Value = p;
-                SetStatus("UpdateDownloading", p);
+                FileName = AppInfo.ReleasesLatestUrl,
+                UseShellExecute = true
             });
-
-            await _updateInstaller.InstallUpdateAsync(result.Update, progress);
-            SetStatus("UpdateReady");
-            Application.Current.Shutdown();
         }
         catch (Exception ex)
         {
@@ -438,8 +504,7 @@ public partial class MainWindow : Window
         }
         finally
         {
-            ScanProgress.Visibility = Visibility.Collapsed;
-            ScanProgress.Value = 0;
+            // no-op: progress bar used only for model scanning
         }
     }
 

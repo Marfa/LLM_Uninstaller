@@ -56,6 +56,14 @@
                       IsChecked="False" VerticalAlignment="Center"
                       Focusable="True"
                       Foreground="{StaticResource TextBrush}" Margin="16,0,0,0"/>
+            <CheckBox x:Name="CursorCacheCleanupCheckBox"
+                      IsChecked="False" VerticalAlignment="Center"
+                      Focusable="True"
+                      Foreground="{StaticResource TextBrush}" Margin="16,0,0,0"/>
+            <CheckBox x:Name="ClaudeCacheCleanupCheckBox"
+                      IsChecked="False" VerticalAlignment="Center"
+                      Focusable="True"
+                      Foreground="{StaticResource TextBrush}" Margin="16,0,0,0"/>
         </StackPanel>
 
         <DataGrid x:Name="ModelsGrid" Grid.Row="2"

@@ -18,7 +18,7 @@ A Windows application that automatically discovers locally installed AI models (
 - **Logging** to SQLite (GUI) or JSON/SQLite (CLI)
 - **CSV export**
 - **Localization** — Russian / English
-- **Auto-update** from [GitHub Releases](https://github.com/Marfa/LLM_Uninstaller/releases)
+- **Update check** on startup: opens the latest GitHub release page (no auto-download)
 
 ## Requirements
 
