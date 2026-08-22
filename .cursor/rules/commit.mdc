@@ -1,0 +1,24 @@
+---
+description: Cursor credit and donation links in README - only original github.com/Marfa repos, never others
+alwaysApply: true
+---
+
+# README: Cursor + donations (Marfa only)
+
+Add Cursor credit and donation links to README **only** in original repositories of [github.com/Marfa](https://github.com/Marfa). Never in other people's projects.
+
+## When it applies
+
+Check before writing or updating any README (including before a GitHub commit):
+
+1. `git remote -v` — `origin` must be `github.com/Marfa/` or `github.com:Marfa/`.
+2. The repo must be Marfa's own project, not a fork of someone else's. Run `gh repo view --json isFork,parent` when possible. Skip if `isFork` is true, or if `upstream` / another remote points to a different GitHub user or org.
+3. Skip if the change is for an upstream PR or any README not owned by Marfa.
+
+If any check fails, do **not** add «Код подготовлен с помощью Cursor» or Marfa donation links.
+
+## When it applies, include in README
+
+1. Код подготовлен с помощью Cursor
+2. Поддержка проекта Донат https://www.donationalerts.com/r/themarfa
+   Донат криптой https://nowpayments.io/donation/themarfa

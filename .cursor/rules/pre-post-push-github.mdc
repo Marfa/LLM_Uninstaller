@@ -1,0 +1,39 @@
+---
+description: Before/after git push — PRs, security alerts, green Actions
+alwaysApply: true
+---
+
+# Pre-push / post-push GitHub checks
+
+Repo: [Marfa/LLM_Uninstaller](https://github.com/Marfa/LLM_Uninstaller).
+
+## Before every `git push`
+
+1. **Open PRs** — review and handle https://github.com/Marfa/LLM_Uninstaller/pulls  
+   (`gh pr list`, review/merge/close/comment as needed; do not leave blocking open work ignored).
+
+2. **Security alerts** — check and process all of:
+   - https://github.com/Marfa/LLM_Uninstaller/security/malware
+   - https://github.com/Marfa/LLM_Uninstaller/security/dependabot
+   - https://github.com/Marfa/LLM_Uninstaller/security/code-scanning
+   - https://github.com/Marfa/LLM_Uninstaller/security/secret-scanning  
+   (`gh api` alerts; fix code, bump deps, dismiss with reason, or open fix PR).
+
+Do not push until open PRs and security alerts are consciously handled (fixed, merged, or explicitly deferred with a note to the user).
+
+## After every `git push`
+
+1. Watch https://github.com/Marfa/LLM_Uninstaller/actions (`gh run list` / `gh run watch`).
+2. Drive failed workflows to **green**: read failed logs, fix root cause, push follow-up, re-check until Actions succeed (or report a blocker that needs the user).
+
+## Commands (typical)
+
+```bash
+gh pr list --repo Marfa/LLM_Uninstaller
+gh api "/repos/Marfa/LLM_Uninstaller/dependabot/alerts?state=open"
+gh api "/repos/Marfa/LLM_Uninstaller/code-scanning/alerts?state=open"
+gh api "/repos/Marfa/LLM_Uninstaller/secret-scanning/alerts?state=open"
+gh run list --repo Marfa/LLM_Uninstaller --limit 10
+gh run watch <run-id> --repo Marfa/LLM_Uninstaller
+gh run view <run-id> --repo Marfa/LLM_Uninstaller --log-failed
+```

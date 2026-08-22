@@ -7,7 +7,6 @@ publish/
 # IDE
 .vs/
 .idea/
-.cursor/rules/
 *.user
 *.suo
 
